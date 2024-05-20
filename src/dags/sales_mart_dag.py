@@ -5,7 +5,7 @@ import pandas as pd
 
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.python_operator import PythonOperator, BranchPythonOperator
+from airflow.operators.python_operator import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.hooks.http_hook import HttpHook
@@ -16,12 +16,12 @@ base_url = http_conn_id.host
 
 postgres_conn_id = 'postgresql_de'
 
-nickname = 'anastazia-rem'
-cohort = '25'
+NICKNAME = 'anastazia-rem'
+COHORT = '25'
 
 headers = {
-    'X-Nickname': nickname,
-    'X-Cohort': cohort,
+    'X-Nickname': NICKNAME,
+    'X-Cohort': COHORT,
     'X-Project': 'True',
     'X-API-KEY': api_key,
     'Content-Type': 'application/x-www-form-urlencoded'
@@ -90,8 +90,7 @@ def upload_data_to_staging(filename, date, pg_table, pg_schema, ti):
     open(f"{local_filename}", "wb").write(response.content)
     print(response.content)
 
-    df = pd.read_csv(local_filename)
-    df=df.drop('id', axis=1)
+    df = pd.read_csv(local_filename, index_col=0)
     df=df.drop_duplicates(subset=['uniq_id'])
 
     if 'status' not in df.columns:
@@ -108,7 +107,7 @@ args = {
     'email': ['student@example.com'],
     'email_on_failure': False,
     'email_on_retry': False,
-    'retries': 0
+    'retries': 3
 }
 
 business_dt = '{{ ds }}'
@@ -180,5 +179,4 @@ with DAG(
             >> [update_f_sales, update_f_customer_retention]
             
     )
-
 
